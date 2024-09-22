@@ -1,0 +1,55 @@
+<!-- templates/podcasts/upload_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Podcast Files</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <h2>Upload Podcast Files</h2>
+    
+    <form id="podcast-form">
+        <label for="cover-image">Cover Image:</label>
+        <input type="file" id="cover-image" name="cover-image">
+        <br>
+        <label for="audio-file">Audio File:</label>
+        <input type="file" id="audio-file" name="audio-file">
+    </form>
+
+    <script>
+        $(document).ready(function () {
+            $('#cover-image').change(function (event) {
+                uploadFile(event.target.files[0], 'image');
+            });
+
+            $('#audio-file').change(function (event) {
+                uploadFile(event.target.files[0], 'audio');
+            });
+
+            function uploadFile(file, fileType) {
+                var formData = new FormData();
+                formData.append('file', file);
+                formData.append('file_type', fileType);
+
+                $.ajax({
+                    url: '{% url "upload-file" %}',  // URL of the Django view handling the upload
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (data) {
+                        console.log("File uploaded successfully: " + data.url);
+                        // Here you can handle the returned URL, e.g., by storing it in a hidden input field
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("File upload failed: " + error);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

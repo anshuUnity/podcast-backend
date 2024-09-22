@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Podcast</title>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            margin-bottom: 20px;
+            color: #424242;
+            text-align: center;
+        }
+
+        label {
+            font-size: 14px;
+            color: #424242;
+        }
+
+        .input-field {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus,
+        input[type="file"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #42a5f5;
+            outline: none;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #42a5f5;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #1e88e5;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #42a5f5;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        /* Loader */
+        .loader {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            margin: -50px 0 0 -50px;
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Backdrop */
+        .backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+
+        /* Alert */
+        .alert {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert.error {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <div class="backdrop"></div>
+    <div class="alert">Podcast saved successfully!</div>
+
+    <div class="container">
+        <h3>Create New Podcast</h3>
+
+        <form id="podcast-form" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <!-- Hidden fields to store the URLs of the uploaded files -->
+            <input type="hidden" id="id_cover_image_url" name="cover_image">
+            <input type="hidden" id="id_audio_file_url" name="audio_file">
+
+            <div class="input-field">
+                <label for="cover-image">Cover Image:</label>
+                <input type="file" id="cover-image" name="cover-image">
+                <div class="progress" id="cover-image-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label for="audio-file">Audio File:</label>
+                <input type="file" id="audio-file" name="audio-file">
+                <div class="progress" id="audio-file-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+
+            <button class="btn" type="submit">Save Podcast</button>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            function showLoader() {
+                $('.loader').show();
+                $('.backdrop').show();
+            }
+
+            function hideLoader() {
+                $('.loader').hide();
+                $('.backdrop').hide();
+            }
+
+            function showAlert(message, type = 'success') {
+                const alertBox = $('.alert');
+                alertBox.text(message);
+                alertBox.removeClass('error').addClass(type);
+                alertBox.fadeIn();
+
+                setTimeout(function () {
+                    alertBox.fadeOut();
+                }, 5000);  // Hide after 5 seconds
+            }
+
+            function uploadFile(file, fileType, progressId, hiddenInputId) {
+                var formData = new FormData();
+                formData.append('file', file);
+                formData.append('file_type', fileType);
+                var progressElement = $(progressId);
+                var progressBar = progressElement.find('.progress-bar');
+
+                progressElement.show();
+
+                $.ajax({
+                    url: '{% url "upload-file" %}',
+                    type: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        var xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function(evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total;
+                                progressBar.css('width', percentComplete * 100 + '%');
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function (data) {
+                        console.log("File uploaded successfully: " + data.url);
+                        // Set the hidden input field with the returned URL
+                        $(hiddenInputId).val(data.url);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("File upload failed: " + error);
+                    },
+                    complete: function() {
+                        progressElement.hide();
+                    }
+                });
+            }
+
+            $('#cover-image').change(function (event) {
+                uploadFile(event.target.files[0], 'image', '#cover-image-progress', '#id_cover_image_url');
+            });
+
+            $('#audio-file').change(function (event) {
+                uploadFile(event.target.files[0], 'audio', '#audio-file-progress', '#id_audio_file_url');
+            });
+
+            $('#podcast-form').on('submit', function (event) {
+                event.preventDefault();  // Prevent default form submission
+
+                showLoader();
+
+                var formData = $(this).serialize();  // Serialize form data
+                console.log(formData);
+                
+
+                $.ajax({
+                    url: '{% url "create-podcast" %}',  // Adjust URL based on your routing
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        showAlert('Podcast saved successfully!');
+                        $('#podcast-form')[0].reset();  // Reset form after successful save
+                    },
+                    error: function (xhr, status, error) {
+                        showAlert('Failed to save podcast. Please try again.', 'error');
+                    },
+                    complete: function() {
+                        hideLoader();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
