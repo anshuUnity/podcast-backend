@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = ["b256-2607-fea8-29c0-bd00-2139-e9d5-2206-b314.ngrok-free.app", "127.0.0.1"]
+ALLOWED_HOSTS = ["podcastapp-bnh5e7d3abhncph2.canadacentral-01.azurewebsites.net", "127.0.0.1"]
 
 
 # Application definition
