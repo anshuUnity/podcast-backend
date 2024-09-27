@@ -11,9 +11,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import Config
+from decouple import config
 
-config = Config()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["4d43-2607-fea8-29c0-bd00-6d56-68bd-fbf3-aed1.ngrok-free.app", "127.0.0.1"]
+ALLOWED_HOSTS = ["3afa-2607-fea8-29c0-bd00-fdd5-9ada-295b-e22.ngrok-free.app", "127.0.0.1"]
 
 
 # Application definition
