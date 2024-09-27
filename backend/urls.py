@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from podcast.views import upload_file, create_podcast, PodcastListView
+from podcast.views import upload_file, create_podcast, PodcastListView,PodcastSearchView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('upload-file/', upload_file, name='upload-file'),
     path('create-podcast/', create_podcast, name='create-podcast'),
     path('podcasts/', PodcastListView.as_view(), name='podcast-list'),
+    path('search/', PodcastSearchView.as_view(), name='podcast-search'),
 ]
