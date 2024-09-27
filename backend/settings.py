@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["3afa-2607-fea8-29c0-bd00-fdd5-9ada-295b-e22.ngrok-free.app", "127.0.0.1"]
+ALLOWED_HOSTS = ["b256-2607-fea8-29c0-bd00-2139-e9d5-2206-b314.ngrok-free.app", "127.0.0.1"]
 
 
 # Application definition
@@ -92,9 +92,20 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': config('ENGINE'),
+        'NAME': config('NAME'),
+        'USER': config('USER'),
+        'PASSWORD': config('PASSWORD'),
+        'HOST': config('HOST'),  # For local development, use 'localhost'. For production, this will be your DB server.
+        'PORT': config('PORT'),  # Default MySQL port
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'ssl': {
+                'ca': f'{BASE_DIR}/DigiCertGlobalRootCA.crt.pem',  # Path to your SSL certificate
+            },
+        },
+        
     }
 }
 
