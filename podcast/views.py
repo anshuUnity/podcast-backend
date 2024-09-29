@@ -11,6 +11,11 @@ from rest_framework import status
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from datetime import datetime, timedelta
+from django.http import JsonResponse
+from django.conf import settings
+from decouple import config
 
 def create_podcast(request):
     if request.method == 'POST':
@@ -46,6 +51,36 @@ def create_podcast(request):
 
 
 def upload_file(request):
+    if request.method == 'POST':
+        blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_CONNECTION_STRING)
+        file_type = request.POST.get('file_type')
+        blob_name = request.POST.get('blob_name')
+        print(file_type, "TUPP", blob_name)
+        if file_type == 'image':
+            container_name = "podcast-covers"
+        elif file_type == 'audio':
+            container_name = "podcast-audio"
+        else:
+            return JsonResponse({"error": "Invalid file type."}, status=400)
+
+        sas_token = generate_blob_sas(
+            account_name=blob_service_client.account_name,
+            container_name=container_name,
+            blob_name=blob_name,
+            account_key=config("AZURE_ACCOUNT_KEY"),  # Use environment variables for this
+            permission=BlobSasPermissions(write=True),
+            expiry=datetime.utcnow() + timedelta(hours=1)  # Token valid for 1 hour
+        )
+
+        url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+
+        return JsonResponse({"url": url}, status=200)
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)
+
+
+
+def upload_filessss(request):
     if request.method == 'POST':
         file = request.FILES.get('file')
         file_type = request.POST.get('file_type')

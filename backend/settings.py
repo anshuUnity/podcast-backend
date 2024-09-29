@@ -56,6 +56,10 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://podcastapp-bnh5e7d3abhncph2.canadacentral-01.azurewebsites.net'
+]
+
 
 # settings.py
 

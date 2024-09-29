@@ -210,45 +210,58 @@
                 }, 5000);  // Hide after 5 seconds
             }
 
-            function uploadFile(file, fileType, progressId, hiddenInputId) {
-                var formData = new FormData();
-                formData.append('file', file);
-                formData.append('file_type', fileType);
-                var progressElement = $(progressId);
-                var progressBar = progressElement.find('.progress-bar');
+        function uploadFile(file, fileType, progressId, hiddenInputId) {
+            // Request SAS token from Django backend
+            var formData = new FormData();
+            formData.append('blob_name', file.name);
+            formData.append('file_type', fileType);
+            $.ajax({
+                url: '{% url "upload-file" %}',  // Replace with your URL
+                type: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    var sasUrl = data.url;
+                    var progressElement = $(progressId);
+                    var progressBar = progressElement.find('.progress-bar');
+                    console.log(data)
+                    progressElement.show();
 
-                progressElement.show();
+                    // Upload file directly to Azure Blob Storage
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('PUT', sasUrl, true);
+                    xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob'); // Required for Azure Blob Storage
 
-                $.ajax({
-                    url: '{% url "upload-file" %}',
-                    type: 'POST',
-                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    xhr: function() {
-                        var xhr = new window.XMLHttpRequest();
-                        xhr.upload.addEventListener("progress", function(evt) {
-                            if (evt.lengthComputable) {
-                                var percentComplete = evt.loaded / evt.total;
-                                progressBar.css('width', percentComplete * 100 + '%');
-                            }
-                        }, false);
-                        return xhr;
-                    },
-                    success: function (data) {
-                        console.log("File uploaded successfully: " + data.url);
-                        // Set the hidden input field with the returned URL
-                        $(hiddenInputId).val(data.url);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("File upload failed: " + error);
-                    },
-                    complete: function() {
-                        progressElement.hide();
-                    }
-                });
-            }
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = (evt.loaded / evt.total) * 100;
+                            progressBar.css('width', percentComplete + '%');
+                        }
+                    }, false);
+
+                    xhr.onload = function() {
+                        if (xhr.status === 201 || xhr.status === 200) {
+                            console.log("File uploaded successfully to Azure: " + file.name);
+                            $(hiddenInputId).val(sasUrl.split("?")[0]);  // Save the URL of the uploaded file
+                        } else {
+                            console.error("File upload to Azure failed.");
+                        }
+                    };
+
+                    xhr.onerror = function() {
+                        console.error("File upload to Azure failed.");
+                    };
+
+                    xhr.send(file);  // Upload the file directly to Azure Blob Storage
+                },
+                error: function(xhr, status, error) {
+                    console.error("SAS token request failed: " + error);
+                }
+            });
+        }
+
 
             $('#cover-image').change(function (event) {
                 uploadFile(event.target.files[0], 'image', '#cover-image-progress', '#id_cover_image_url');
