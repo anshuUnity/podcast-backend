@@ -212,8 +212,21 @@
 
         function uploadFile(file, fileType, progressId, hiddenInputId) {
             // Request SAS token from Django backend
+            // Generate UUID
+            function generateUUID() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            // Get current timestamp
+            var timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+            var uuid = generateUUID();
+
+            var newFileName = `${uuid}_${timestamp}_${file.name}`
             var formData = new FormData();
-            formData.append('blob_name', file.name);
+            formData.append('blob_name', newFileName);
             formData.append('file_type', fileType);
             $.ajax({
                 url: '{% url "upload-file" %}',  // Replace with your URL
@@ -226,7 +239,6 @@
                     var sasUrl = data.url;
                     var progressElement = $(progressId);
                     var progressBar = progressElement.find('.progress-bar');
-                    console.log(data)
                     progressElement.show();
 
                     // Upload file directly to Azure Blob Storage
@@ -275,6 +287,8 @@
                 event.preventDefault();  // Prevent default form submission
 
                 showLoader();
+                var progressElementAudio = $("#audio-file-progress");
+                var progressElementImage = $("#cover-image-progress");
 
                 var formData = $(this).serialize();  // Serialize form data
                 console.log(formData);
@@ -293,6 +307,8 @@
                     },
                     complete: function() {
                         hideLoader();
+                        progressElementAudio.hide();
+                        progressElementImage.hide();
                     }
                 });
             });
